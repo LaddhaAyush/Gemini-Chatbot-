@@ -1,0 +1,11 @@
+# Ignore Python virtual environment
+venv/
+
+# Ignore environment variable files
+.env
+.env.*
+
+# Optionally ignore other IDE or OS-specific files
+__pycache__/
+*.pyc
+.DS_Store

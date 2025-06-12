@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+langchain
+google-generativeai
+jinja2
+langchain-google-genai 

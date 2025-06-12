@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Gemini Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='/advanced_style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>Advanced Gemini Chat</h2>
+                <div class="header-buttons">
+                    <button id="clearChat" class="btn">Clear Chat</button>
+                    <button id="exportChat" class="btn">Export Chat</button>
+                    <button id="showContext" class="btn">Show Context</button>
+                </div>
+            </div>
+            
+            <div class="context-panel">
+                <div class="context-header">
+                    <h3>Conversation Context</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="context-content" id="contextContent">
+                    <!-- Context messages will be displayed here -->
+                </div>
+            </div>
+            
+            <div class="chat-window" id="chatWindow">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        Hello! I'm your AI assistant. How can I help you today?
+                    </div>
+                    <div class="message-timestamp">
+                        {{ current_time }}
+                    </div>
+                </div>
+            </div>
+            
+            <form id="chatForm" class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type your message..." required>
+                <button type="submit" class="send-btn">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentConversationId = null;
+        let conversationContext = [];
+
+        // Function to update context panel
+        function updateContextPanel(context) {
+            const contextContent = document.getElementById('contextContent');
+            contextContent.innerHTML = '';
+            
+            if (context && context.length > 0) {
+                context.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `context-message ${msg.type}-message`;
+                    messageDiv.innerHTML = `
+                        <div class="message-content">${msg.content}</div>
+                        <div class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                    `;
+                    contextContent.appendChild(messageDiv);
+                });
+            } else {
+                contextContent.innerHTML = '<p>No conversation context available.</p>';
+            }
+        }
+
+        // Function to add message to chat window
+        function addMessage(content, isUser = false) {
+            const chatWindow = document.getElementById('chatWindow');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                <div class="message-timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Handle form submission
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: currentConversationId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                const data = await response.json();
+                currentConversationId = data.conversation_id;
+                conversationContext = data.context || [];
+                
+                // Add bot response to chat
+                addMessage(data.response);
+                
+                // Update context panel if it's visible
+                if (document.querySelector('.context-panel.active')) {
+                    updateContextPanel(conversationContext);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('Sorry, I encountered an error. Please try again.', false);
+            }
+        });
+
+        // Handle context panel toggle
+        document.getElementById('showContext').addEventListener('click', () => {
+            const contextPanel = document.querySelector('.context-panel');
+            contextPanel.classList.toggle('active');
+            if (contextPanel.classList.contains('active')) {
+                updateContextPanel(conversationContext);
+            }
+        });
+
+        // Handle context panel close
+        document.querySelector('.context-panel .close-btn').addEventListener('click', () => {
+            document.querySelector('.context-panel').classList.remove('active');
+        });
+
+        // Handle clear chat
+        document.getElementById('clearChat').addEventListener('click', () => {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = `
+                <div class="message bot-message">
+                    <div class="message-content">
+                        Hello! I'm your AI assistant. How can I help you today?
+                    </div>
+                    <div class="message-timestamp">
+                        ${new Date().toLocaleTimeString()}
+                    </div>
+                </div>
+            `;
+            currentConversationId = null;
+            conversationContext = [];
+            updateContextPanel([]);
+        });
+
+        // Handle export chat
+        document.getElementById('exportChat').addEventListener('click', () => {
+            const chatWindow = document.getElementById('chatWindow');
+            const messages = Array.from(chatWindow.children).map(msg => ({
+                type: msg.classList.contains('user-message') ? 'user' : 'assistant',
+                content: msg.querySelector('.message-content').textContent,
+                timestamp: msg.querySelector('.message-timestamp').textContent
+            }));
+
+            const exportData = {
+                conversation_id: currentConversationId,
+                timestamp: new Date().toISOString(),
+                messages: messages,
+                context: conversationContext
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat_export_${new Date().toISOString()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html> 
