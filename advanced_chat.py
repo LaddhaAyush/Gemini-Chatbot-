@@ -6,14 +6,15 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
-from langchain.prompts import PromptTemplate
-import json
+from langchain_core.prompts import PromptTemplate
 import re
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # Initialize FastAPI app
 app = FastAPI(
