@@ -229,7 +229,7 @@ def process_pdf(uploaded_file):
 
 def get_conversation_chain(vector_store):
     llm = ChatGroq(
-        temperature=0.1,
+        temperature=0.4,
         groq_api_key=os.getenv('GROQ_API_KEY'),
         model_name="meta-llama/llama-4-scout-17b-16e-instruct"
     )
