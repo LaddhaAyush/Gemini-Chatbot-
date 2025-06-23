@@ -30,3 +30,4 @@ async def chat(request: Request):
         return JSONResponse({"response": "Please enter a message."})
     response = llm.invoke(user_message)
     return JSONResponse({"response": response.content}) 
+

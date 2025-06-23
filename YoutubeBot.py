@@ -152,3 +152,15 @@ Answer:"""
             print(f"Error processing question: {e}")
         
         print("\n" + "-"*50 + "\n")
+
+
+# IMPROVEMENTS REQUIRED:-
+# Query rewriting using llmm 
+# multi query generation
+# MMR , Reranking , Contextual COmpression
+# Context window optimization
+# context awared 
+# multimodal 
+# agentic ai 
+# guard railing
+
